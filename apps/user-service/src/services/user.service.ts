@@ -87,6 +87,18 @@ export const deleteUser = async (id: string) => {
   return true;
 };
 
+export const changeUserPassword = async (userId: string, currentPassword: string, newPassword: string) => {
+  const user = await User.findByPk(userId);
+  if (!user) throw new Error('User not found');
+  if (user.status !== 'active') throw new Error(`Account is ${user.status}`);
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+  if (!isMatch) throw new Error('Current password is incorrect');
+
+  const password_hash = await bcrypt.hash(newPassword, 12);
+  await user.update({ password_hash });
+};
+
 export const validateCredentials = async (email: string, password: string) => {
   const user = await User.findOne({
     where: { email },

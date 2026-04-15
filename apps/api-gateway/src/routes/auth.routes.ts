@@ -5,7 +5,7 @@ import config from '../config';
 
 const router = Router();
 
-// Public auth routes (login, register, etc.)
+// Public auth routes (login, logout)
 router.use(
   '/auth',
   createProxyMiddleware({

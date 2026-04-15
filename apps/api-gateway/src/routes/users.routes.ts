@@ -18,5 +18,6 @@ router.post('/', authenticate, requireAdmin, proxy);
 router.put('/:id', authenticate, requireAdmin, proxy);
 router.delete('/:id', authenticate, requireAdmin, proxy);
 router.put('/:id/roles', authenticate, requireAdmin, proxy);
+router.post('/change-password', authenticate, proxy);
 
 export default router;

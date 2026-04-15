@@ -103,6 +103,26 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
+export const changePassword = async (req: Request, res: Response): Promise<void> => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    res.status(400).json({ message: 'currentPassword and newPassword are required' });
+    return;
+  }
+  try {
+    const userId = (req as any).userId;
+    await userService.changeUserPassword(userId, currentPassword, newPassword);
+    res.json({
+      status: true,
+      message: 'Password changed successfully',
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to change password';
+    logger.error(`changePassword error: ${message}`);
+    res.status(400).json({ message });
+  }
+};
+
 export const validateCredentials = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
   if (!email || !password) {

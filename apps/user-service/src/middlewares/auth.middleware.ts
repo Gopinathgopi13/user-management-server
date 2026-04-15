@@ -27,14 +27,6 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
   }
 };
 
-export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  if (req.userRole !== 'admin') {
-    res.status(403).json({ message: 'Admin access required' });
-    return;
-  }
-  next();
-};
-
 export const requirePermission =
   (resource: string, action: string) =>
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {

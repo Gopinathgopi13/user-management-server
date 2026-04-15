@@ -9,7 +9,6 @@ const app = express();
 
 app.use(cors());
 
-// Request logger
 app.use((req, _res, next) => {
   logger.info(`${req.method} ${req.path}`);
   next();
