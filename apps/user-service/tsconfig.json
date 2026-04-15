@@ -1,0 +1,29 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "baseUrl": "src",
+    "paths": {
+      "@config": ["config/index"],
+      "@config/*": ["config/*"],
+      "@controllers/*": ["controllers/*"],
+      "@services/*": ["services/*"],
+      "@models": ["models/index"],
+      "@models/*": ["models/*"],
+      "@utils/*": ["utils/*"],
+      "@middlewares/*": ["middlewares/*"],
+      "@schemas/*": ["schemas/*"],
+      "@shared": ["../../../packages/shared/src"],
+      "@shared/*": ["../../../packages/shared/src/*"]
+    }
+  },
+  "ts-node": {
+    "files": true
+  },
+  "files": [
+    "src/types/express.d.ts"
+  ],
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
