@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { RefreshToken } from '@models';
 import config from '@config';
+import logger from '@utils/logger';
 
 interface UserInfo {
   id: string;
@@ -40,6 +41,7 @@ export const login = async (email: string, password: string) => {
 
   if (!response.ok) {
     const body = (await response.json()) as { message?: string };
+    logger.warn(`Login failed for email: ${email} — ${body.message || 'Invalid credentials'}`);
     throw new Error(body.message || 'Invalid credentials');
   }
 
@@ -56,6 +58,7 @@ export const login = async (email: string, password: string) => {
     expires_at: expiresAt,
   });
 
+  logger.info(`User logged in: ${user.id}`);
   return {
     accessToken: generateAccessToken(user),
     refreshToken: rawToken,
@@ -67,9 +70,18 @@ export const refresh = async (rawToken: string) => {
   const hashedToken = hashToken(rawToken);
   const record = await RefreshToken.findOne({ where: { token: hashedToken } });
 
-  if (!record) throw new Error('Invalid refresh token');
-  if (record.is_revoked) throw new Error('Refresh token has been revoked');
-  if (record.expires_at < new Date()) throw new Error('Refresh token has expired');
+  if (!record) {
+    logger.warn('Refresh token not found');
+    throw new Error('Invalid refresh token');
+  }
+  if (record.is_revoked) {
+    logger.warn(`Revoked refresh token used for user: ${record.user_id}`);
+    throw new Error('Refresh token has been revoked');
+  }
+  if (record.expires_at < new Date()) {
+    logger.warn(`Expired refresh token used for user: ${record.user_id}`);
+    throw new Error('Refresh token has expired');
+  }
 
   // Revoke old token and issue a new one (rotation)
   await record.update({ is_revoked: true });
@@ -78,10 +90,16 @@ export const refresh = async (rawToken: string) => {
     headers: { 'X-Internal-Key': config.userService.internalKey },
   });
 
-  if (!response.ok) throw new Error('User not found');
+  if (!response.ok) {
+    logger.error(`User not found during token refresh: ${record.user_id}`);
+    throw new Error('User not found');
+  }
   const user = (await response.json()) as UserInfo;
 
-  if (user.status !== 'active') throw new Error('Account is not active');
+  if (user.status !== 'active') {
+    logger.warn(`Token refresh rejected for inactive account: ${user.id}`);
+    throw new Error('Account is not active');
+  }
 
   const newRawToken = generateRefreshToken();
   const newHashedToken = hashToken(newRawToken);
@@ -94,6 +112,7 @@ export const refresh = async (rawToken: string) => {
     expires_at: expiresAt,
   });
 
+  logger.info(`Token refreshed for user: ${user.id}`);
   return {
     accessToken: generateAccessToken(user),
     refreshToken: newRawToken,
@@ -103,6 +122,10 @@ export const refresh = async (rawToken: string) => {
 export const logout = async (rawToken: string) => {
   const hashedToken = hashToken(rawToken);
   const record = await RefreshToken.findOne({ where: { token: hashedToken } });
-  if (!record) throw new Error('Invalid refresh token');
+  if (!record) {
+    logger.warn('Logout attempted with invalid refresh token');
+    throw new Error('Invalid refresh token');
+  }
   await record.update({ is_revoked: true });
+  logger.info(`User logged out: ${record.user_id}`);
 };

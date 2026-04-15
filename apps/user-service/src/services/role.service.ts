@@ -1,4 +1,5 @@
 import { Role } from '@models';
+import logger from '@utils/logger';
 
 export const findAllRoles = async () => {
   return Role.findAll();
@@ -9,7 +10,9 @@ export const findRoleById = async (id: string) => {
 };
 
 export const createRole = async (data: { name: string; permissions?: Record<string, string[]> }) => {
-  return Role.create(data);
+  const role = await Role.create(data);
+  logger.info(`Role created: ${role.id} (${data.name})`);
+  return role;
 };
 
 export const updateRole = async (
@@ -18,12 +21,15 @@ export const updateRole = async (
 ) => {
   const role = await Role.findByPk(id);
   if (!role) return null;
-  return role.update(data);
+  const updated = await role.update(data);
+  logger.info(`Role updated: ${id}`);
+  return updated;
 };
 
 export const deleteRole = async (id: string) => {
   const role = await Role.findByPk(id);
   if (!role) return null;
   await role.destroy();
+  logger.info(`Role deleted: ${id}`);
   return true;
 };

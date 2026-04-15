@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 import { User, Role } from '@models';
 import { UserStatus } from '@models/user.model';
 import { generatePassword } from '@utils/index';
+import logger from '@utils/logger';
 
 const userWithRole = {
   attributes: { exclude: ['password_hash'] },
@@ -59,7 +60,6 @@ export const findUserById = async (id: string) => {
 
 export const createUser = async (data: { name: string; email: string; role_id: string }) => {
   const generatedPassword = generatePassword();
-  console.log(generatedPassword, "---> Password");
   const password_hash = await bcrypt.hash(generatedPassword, 12);
   const user = await User.create({
     name: data.name,
@@ -67,6 +67,7 @@ export const createUser = async (data: { name: string; email: string; role_id: s
     password_hash,
     role_id: data.role_id,
   });
+  logger.info(`User created: ${user.id} (${data.email})`);
   return { ...(await findUserById(user.id))?.toJSON(), generatedPassword };
 };
 
@@ -77,6 +78,7 @@ export const updateUser = async (
   const user = await User.findByPk(id);
   if (!user) return null;
   await user.update(data);
+  logger.info(`User updated: ${id}`);
   return findUserById(id);
 };
 
@@ -84,6 +86,7 @@ export const deleteUser = async (id: string) => {
   const user = await User.findByPk(id);
   if (!user) return null;
   await user.destroy();
+  logger.info(`User deleted: ${id}`);
   return true;
 };
 
@@ -93,10 +96,14 @@ export const changeUserPassword = async (userId: string, currentPassword: string
   if (user.status !== 'active') throw new Error(`Account is ${user.status}`);
 
   const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
-  if (!isMatch) throw new Error('Current password is incorrect');
+  if (!isMatch) {
+    logger.warn(`Password change failed for user: ${userId} — incorrect current password`);
+    throw new Error('Current password is incorrect');
+  }
 
   const password_hash = await bcrypt.hash(newPassword, 12);
   await user.update({ password_hash });
+  logger.info(`Password changed for user: ${userId}`);
 };
 
 export const validateCredentials = async (email: string, password: string) => {
@@ -105,11 +112,20 @@ export const validateCredentials = async (email: string, password: string) => {
     include: [{ model: Role, as: 'role', attributes: ['id', 'name', 'permissions'] }],
   });
 
-  if (!user) throw new Error('Invalid credentials');
-  if (user.status !== 'active') throw new Error(`Account is ${user.status}`);
+  if (!user) {
+    logger.warn(`Credential validation failed: email not found (${email})`);
+    throw new Error('Invalid credentials');
+  }
+  if (user.status !== 'active') {
+    logger.warn(`Credential validation rejected for inactive account: ${user.id}`);
+    throw new Error(`Account is ${user.status}`);
+  }
 
   const isMatch = await bcrypt.compare(password, user.password_hash);
-  if (!isMatch) throw new Error('Invalid credentials');
+  if (!isMatch) {
+    logger.warn(`Credential validation failed: wrong password for user ${user.id}`);
+    throw new Error('Invalid credentials');
+  }
 
   const { password_hash: _, ...safeUser } = user.toJSON() as unknown as Record<string, unknown>;
   return safeUser;

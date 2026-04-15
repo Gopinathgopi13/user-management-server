@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import config from '../config';
+import logger from '../utils/logger';
 
 declare global {
   namespace Express {
@@ -19,6 +20,7 @@ interface JwtPayload {
 export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    logger.warn(`Missing token on ${req.method} ${req.path}`);
     res.status(401).json({ message: 'No token provided' });
     return;
   }
@@ -29,12 +31,14 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
     req.adminRole = decoded.role as 'admin' | 'user';
     next();
   } catch {
+    logger.warn(`Invalid or expired token on ${req.method} ${req.path}`);
     res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
 
 export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
   if (req.adminRole !== 'admin') {
+    logger.warn(`Admin access denied for user: ${req.adminId} on ${req.method} ${req.path}`);
     res.status(403).json({ message: 'Admin access required' });
     return;
   }

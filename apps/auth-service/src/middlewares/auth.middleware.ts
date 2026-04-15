@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import config from '@config';
+import logger from '@utils/logger';
 
 interface JwtPayload {
   sub: string;
@@ -10,6 +11,7 @@ interface JwtPayload {
 export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    logger.warn(`Missing token on ${req.method} ${req.path}`);
     res.status(401).json({ message: 'No token provided' });
     return;
   }
@@ -21,6 +23,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
     req.userRole = decoded.role;
     next();
   } catch {
+    logger.warn(`Invalid or expired token on ${req.method} ${req.path}`);
     res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
