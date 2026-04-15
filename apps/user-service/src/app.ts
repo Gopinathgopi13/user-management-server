@@ -1,6 +1,7 @@
 import http from 'http';
 import express from 'express';
 import cors from 'cors';
+import jwt from 'jsonwebtoken';
 import { Server as SocketIOServer } from 'socket.io';
 import router from './routes';
 import config from '@config';
@@ -28,9 +29,19 @@ app.get('/', (_req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token as string | undefined;
+  if (!token) return next();
+  const decoded = jwt.verify(token, config.jwt_secret) as { role?: string };
+  (socket as any).userRole = decoded.role;
+  next();
+});
+
 io.on('connection', (socket) => {
   logger.info(`Socket connected: ${socket.id}`);
-  socket.join('admins');
+  if ((socket as any).userRole === 'admin') {
+    socket.join('admins');
+  }
 
   socket.on('disconnect', () => {
     logger.info(`Socket disconnected: ${socket.id}`);

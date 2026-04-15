@@ -1,2 +1,16 @@
-export const generatePassword = (): string =>
-  Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
+export const generatePassword = (): string => {
+  const lower = 'abcdefghijklmnopqrstuvwxyz';
+  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const digits = '0123456789';
+  const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+  const all = lower + upper + digits + symbols;
+
+  const rand = (chars: string) => chars[Math.floor(Math.random() * chars.length)];
+
+  const required = [rand(upper), rand(digits), rand(symbols)];
+  const rest = Array.from({ length: 5 }, () => rand(all));
+
+  return [...required, ...rest]
+    .sort(() => Math.random() - 0.5)
+    .join('');
+};

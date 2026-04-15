@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import config from '@config';
+import Role from '@models/role.model';
 
 interface JwtPayload {
   sub: string;
@@ -33,6 +34,31 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction): v
   }
   next();
 };
+
+export const requirePermission =
+  (resource: string, action: string) =>
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const roleName = req.userRole;
+    if (!roleName) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+    try {
+      const role = await Role.findOne({ where: { name: roleName } });
+      if (!role) {
+        res.status(403).json({ message: 'Forbidden' });
+        return;
+      }
+      const allowed = role.permissions[resource] ?? [];
+      if (!allowed.includes(action)) {
+        res.status(403).json({ status: false, message: `Permission denied: ${resource}:${action}` });
+        return;
+      }
+      next();
+    } catch {
+      res.status(500).json({ message: 'Permission check failed' });
+    }
+  };
 
 export const internalKeyGuard = (req: Request, res: Response, next: NextFunction): void => {
   const key = config.internal_API_Key || 'internal_secret_key';
