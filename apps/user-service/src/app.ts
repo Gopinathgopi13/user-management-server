@@ -32,9 +32,14 @@ app.use(errorHandler);
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token as string | undefined;
   if (!token) return next();
-  const decoded = jwt.verify(token, config.jwt_secret) as { role?: string };
-  (socket as any).userRole = decoded.role;
-  next();
+  if (!config.jwt_secret) return next(new Error('JWT secret not configured'));
+  try {
+    const decoded = jwt.verify(token, config.jwt_secret) as { role?: string };
+    (socket as any).userRole = decoded.role;
+    next();
+  } catch (err) {
+    next(new Error('Invalid token'));
+  }
 });
 
 io.on('connection', (socket) => {
