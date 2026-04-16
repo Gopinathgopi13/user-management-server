@@ -82,6 +82,11 @@ export const findUserById = async (id: string) => {
 
 export const createUser = async (data: { name: string; email: string; role_id: string }) => {
   try {
+    const isUserExists = await UserRepo.findOne({ where: { email: data.email } });
+    if (isUserExists) {
+      logger.warn(`createUser duplicate email attempt: ${data.email}`);
+      throw new Error('User with this email already exists');
+    }
     const generatedPassword = generatePassword();
     const password_hash = await bcrypt.hash(generatedPassword, 12);
     const user = await UserRepo.create({
@@ -92,7 +97,8 @@ export const createUser = async (data: { name: string; email: string; role_id: s
     });
     logger.info(`User created: ${user.id} (${data.email})`);
     await sendWelcomeMail(data.name, data.email, generatedPassword);
-    return { ...(await findUserById(user.id))?.toJSON(), generatedPassword };
+    const userData = (await findUserById(user.id))?.toJSON();
+    return userData;
   } catch (error) {
     logger.error(`createUser error for email ${data.email}: ${error}`);
     throw error;
@@ -108,7 +114,8 @@ export const updateUser = async (
     if (!user) return null;
     await user.update(data);
     logger.info(`User updated: ${id}`);
-    return findUserById(id);
+    const userData = (await findUserById(id))?.toJSON();
+    return userData;
   } catch (error) {
     logger.error(`updateUser error for user ${id}: ${error}`);
     throw error;

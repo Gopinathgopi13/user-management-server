@@ -46,7 +46,7 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
       res.status(404).json({ message: 'User not found' });
       return;
     }
-    res.json(user);
+    res.json({ status: true, data: user, message: 'User fetched successfully' });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to fetch user';
     logger.error(`getUserById error: ${message}`);
@@ -60,7 +60,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     const user = await userService.createUser({ name, email, role_id });
     const io = req.app.get('io');
     if (io) io.to('admins').emit('user:created', user);
-    res.status(201).json(user);
+    res.status(201).json({ status: true, data: user, message: 'User created successfully' });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to create user';
     logger.error(`createUser error: ${message}`);
@@ -77,7 +77,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     }
     const io = req.app.get('io');
     if (io) io.to('admins').emit('user:updated', user);
-    res.json(user);
+    res.json({ status: true, data: user, message: 'User updated successfully' });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to update user';
     logger.error(`updateUser error: ${message}`);

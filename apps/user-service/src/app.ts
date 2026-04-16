@@ -7,7 +7,7 @@ import router from './routes';
 import config from '@config';
 import logger from '@shared/logger';
 import { sequelize } from './models';
-import { errorHandler, notFound } from './middlewares/error.middleware';
+import { notFound, errorHandler } from '@shared/middleware';
 
 const app = express();
 const server = http.createServer(app);

@@ -3,29 +3,12 @@ import jwt from 'jsonwebtoken';
 import config from '@config';
 import Role from '@models/role.model';
 import logger from '@shared/logger';
+import { createAuthenticateMiddleware } from '@shared/middleware';
 
-interface JwtPayload {
-  sub: string;
-  role: string;
-}
-
-export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    logger.warn(`Missing token on ${req.method} ${req.path}`);
-    res.status(401).json({ message: 'No token provided' });
-    return;
-  }
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, config.jwt_secret) as JwtPayload;
-    req.userId = decoded.sub;
-    req.userRole = decoded.role;
-    next();
-  } catch {
-    res.status(401).json({ message: 'Invalid or expired token' });
-  }
-};
+export const authenticate = createAuthenticateMiddleware(
+  () => config.jwt_secret,
+  (token, secret) => jwt.verify(token, secret),
+);
 
 export const requirePermission =
   (resource: string, action: string) =>

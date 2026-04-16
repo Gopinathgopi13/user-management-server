@@ -17,7 +17,8 @@
       "@schemas/*": ["schemas/*"],
       "@templates/*": ["templates/*"],
       "@shared/logger": ["../../../shared/logger/index"],
-      "@shared/mailer": ["../../../shared/mailer/index"]
+      "@shared/mailer": ["../../../shared/mailer/index"],
+      "@shared/middleware": ["../../../shared/middleware/index"]
     }
   },
   "ts-node": {
