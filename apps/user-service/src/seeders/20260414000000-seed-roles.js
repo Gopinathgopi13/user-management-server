@@ -9,7 +9,20 @@ module.exports = {
       {
         id: uuidv4(),
         name: 'admin',
-        permissions: JSON.stringify({ users: ['read', 'write', 'delete'], roles: ['read', 'write', 'delete'] }),
+        permissions: JSON.stringify({
+          users: ['read', 'create', 'update', 'delete'],
+          roles: ['read', 'create', 'update', 'delete'],
+        }),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: uuidv4(),
+        name: 'manager',
+        permissions: JSON.stringify({
+          users: ['read', 'create', 'update', 'delete'],
+          roles: ['read', 'create', 'update', 'delete'],
+        }),
         createdAt: new Date(),
         updatedAt: new Date(),
       },

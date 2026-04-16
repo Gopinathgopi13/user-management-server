@@ -23,7 +23,6 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
     req.userRole = decoded.role;
     next();
   } catch {
-    logger.warn(`Invalid or expired token on ${req.method} ${req.path}`);
     res.status(401).json({ message: 'Invalid or expired token' });
   }
 };

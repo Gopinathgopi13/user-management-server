@@ -35,6 +35,16 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'RESTRICT',
       },
+      otp_code: {
+        type: Sequelize.STRING(6),
+        allowNull: true,
+        defaultValue: null,
+      },
+      otp_expires_at: {
+        type: Sequelize.DATE,
+        allowNull: true,
+        defaultValue: null,
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,

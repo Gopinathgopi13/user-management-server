@@ -12,17 +12,14 @@
       "@models": ["models/index"],
       "@models/*": ["models/*"],
       "@utils/*": ["utils/*"],
-      "@middlewares/*": ["middlewares/*"],
-      "@shared": ["../../../packages/shared/src"],
-      "@shared/*": ["../../../packages/shared/src/*"]
+      "@middlewares/*": ["middlewares/*"]
     }
   },
   "ts-node": {
-    "files": true
+    "files": true,
+    "require": ["tsconfig-paths/register"]
   },
-  "files": [
-    "src/types/express.d.ts"
-  ],
+  "files": ["src/types/express.d.ts"],
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }

@@ -10,6 +10,8 @@ interface UserAttributes {
   password_hash: string;
   status: UserStatus;
   role_id: string;
+  otp_code?: string | null;
+  otp_expires_at?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -23,6 +25,8 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public password_hash!: string;
   public status!: UserStatus;
   public role_id!: string;
+  public otp_code!: string | null;
+  public otp_expires_at!: Date | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -57,6 +61,16 @@ User.init(
       type: DataTypes.UUID,
       allowNull: false,
       references: { model: 'roles', key: 'id' },
+    },
+    otp_code: {
+      type: DataTypes.STRING(6),
+      allowNull: true,
+      defaultValue: null,
+    },
+    otp_expires_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null,
     },
   },
   {

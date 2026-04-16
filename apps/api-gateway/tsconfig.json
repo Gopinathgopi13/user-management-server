@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "outDir": "dist",
     "rootDir": "src",
     "baseUrl": "src",
@@ -10,8 +11,6 @@
       "@middlewares/*": ["middlewares/*"],
       "@routes/*": ["routes/*"],
       "@utils/*": ["utils/*"],
-      "@shared": ["../../../packages/shared/src"],
-      "@shared/*": ["../../../packages/shared/src/*"]
     }
   },
   "include": ["src"],

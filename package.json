@@ -16,6 +16,10 @@
     "format": "npm run format --workspaces"
   },
   "devDependencies": {
+    "@types/nodemailer": "^8.0.0",
     "concurrently": "^9.1.2"
+  },
+  "dependencies": {
+    "nodemailer": "^8.0.5"
   }
 }

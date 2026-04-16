@@ -19,4 +19,12 @@ export default {
   },
   jwt_secret: process.env.JWT_SECRET || '',
   internal_API_Key: process.env.INTERNAL_API_KEY || 'internal_secret_key',
+  mail: {
+    host: process.env.MAIL_HOST || 'smtp.gmail.com',
+    port: Number(process.env.MAIL_PORT) || 587,
+    secure: process.env.MAIL_SECURE === 'true',
+    address: process.env.MAIL_ADDRESS || 'noreply@example.com',
+    username: process.env.MAIL_USERNAME || 'noreply@example.com',
+    password: process.env.MAIL_PASSWORD || 'password',
+  },
 };

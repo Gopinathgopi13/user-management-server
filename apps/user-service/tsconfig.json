@@ -14,8 +14,7 @@
       "@utils/*": ["utils/*"],
       "@middlewares/*": ["middlewares/*"],
       "@schemas/*": ["schemas/*"],
-      "@shared": ["../../../packages/shared/src"],
-      "@shared/*": ["../../../packages/shared/src/*"]
+      "@templates/*": ["templates/*"]
     }
   },
   "ts-node": {

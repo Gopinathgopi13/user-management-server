@@ -31,7 +31,6 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
     req.adminRole = decoded.role as 'admin' | 'user';
     next();
   } catch {
-    logger.warn(`Invalid or expired token on ${req.method} ${req.path}`);
     res.status(401).json({ message: 'Invalid or expired token' });
   }
 };

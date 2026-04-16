@@ -16,7 +16,7 @@ module.exports = {
     await queryInterface.bulkInsert('users', [
       {
         id: uuidv4(),
-        name: 'Super Admin',
+        name: 'Admin',
         email: 'admin@example.com',
         password_hash,
         status: 'active',

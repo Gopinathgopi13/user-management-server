@@ -1,9 +1,16 @@
 import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
-import { User, Role } from '@models';
+import User from '@models/user.model';
+import Role from '@models/role.model';
 import { UserStatus } from '@models/user.model';
-import { generatePassword } from '@utils/index';
+import { generateOtp, generatePassword } from '@utils/index';
 import logger from '@utils/logger';
+import { sendWelcomeMail, sendOtpMail, sendNewPasswordMail } from '@services/mail.service';
+import type { UserRepoType } from '../types/common.types';
+
+const OTP_EXPIRY_MINUTES = 10;
+
+const UserRepo = User as UserRepoType;
 
 const userWithRole = {
   attributes: { exclude: ['password_hash'] },
@@ -15,118 +22,200 @@ export const findAllUsers = async (
   size: number = 10,
   filters: { search?: string; role_id?: string } = {},
 ) => {
-  const offset = (page - 1) * size;
-  const where: Record<string, unknown> = {};
+  try {
+    const offset = (page - 1) * size;
+    const where: Record<string, unknown> = {};
 
-  if (filters.search) {
-    where[Op.or as unknown as string] = [
-      { name: { [Op.iLike]: `%${filters.search}%` } },
-      { email: { [Op.iLike]: `%${filters.search}%` } },
-    ];
-  }
-  if (filters.role_id) {
-    where.role_id = filters.role_id;
-  }
+    if (filters.search) {
+      where[Op.or as unknown as string] = [
+        { name: { [Op.iLike]: `%${filters.search}%` } },
+        { email: { [Op.iLike]: `%${filters.search}%` } },
+      ];
+    }
+    if (filters.role_id) {
+      where.role_id = filters.role_id;
+    }
 
-  const { rows, count } = await User.findAndCountAll({
-    ...userWithRole,
-    where,
-    limit: size,
-    offset,
-  });
-  return { data: rows, page, size, total: count };
+    const { rows, count } = await UserRepo.findAndCountAll({
+      ...userWithRole,
+      where,
+      limit: size,
+      offset,
+    });
+    return { data: rows, page, size, total: count };
+  } catch (error) {
+    logger.error(`findAllUsers error: ${error}`);
+    throw error;
+  }
 };
 
 export const getUserStats = async () => {
-  const total = await User.count();
-  const active = await User.count({ where: { status: 'active' } });
-  const inactive = await User.count({ where: { status: 'inactive' } });
-  const admins = await User.count({
-    include: [
-      {
-        model: Role,
-        as: 'role',
-        where: { name: 'admin' },
-        attributes: [],
-      },
-    ],
-  });
-  return { total, active, inactive, admins };
+  try {
+    const [total, active, inactive, admins] = await Promise.all([
+      UserRepo.count(),
+      UserRepo.count({ where: { status: 'active' } }),
+      UserRepo.count({ where: { status: 'inactive' } }),
+      UserRepo.count({
+        include: [
+          {
+            model: Role,
+            as: 'role',
+            where: { name: 'admin' },
+            attributes: [],
+          },
+        ],
+      }),
+    ]);
+    return { total, active, inactive, admins };
+  } catch (error) {
+    logger.error(`getUserStats error: ${error}`);
+    throw error;
+  }
 };
 
 export const findUserById = async (id: string) => {
-  return User.findByPk(id, userWithRole);
+  try {
+    return await UserRepo.findByPk(id, userWithRole);
+  } catch (error) {
+    logger.error(`findUserById error for user ${id}: ${error}`);
+    throw error;
+  }
 };
 
 export const createUser = async (data: { name: string; email: string; role_id: string }) => {
-  const generatedPassword = generatePassword();
-  const password_hash = await bcrypt.hash(generatedPassword, 12);
-  const user = await User.create({
-    name: data.name,
-    email: data.email,
-    password_hash,
-    role_id: data.role_id,
-  });
-  logger.info(`User created: ${user.id} (${data.email})`);
-  return { ...(await findUserById(user.id))?.toJSON(), generatedPassword };
+  try {
+    const generatedPassword = generatePassword();
+    const password_hash = await bcrypt.hash(generatedPassword, 12);
+    const user = await UserRepo.create({
+      name: data.name,
+      email: data.email,
+      password_hash,
+      role_id: data.role_id,
+    });
+    logger.info(`User created: ${user.id} (${data.email})`);
+    await sendWelcomeMail(data.name, data.email, generatedPassword);
+    return { ...(await findUserById(user.id))?.toJSON(), generatedPassword };
+  } catch (error) {
+    logger.error(`createUser error for email ${data.email}: ${error}`);
+    throw error;
+  }
 };
 
 export const updateUser = async (
   id: string,
   data: Partial<{ name: string; email: string; status: UserStatus; role_id: string }>,
 ) => {
-  const user = await User.findByPk(id);
-  if (!user) return null;
-  await user.update(data);
-  logger.info(`User updated: ${id}`);
-  return findUserById(id);
+  try {
+    const user = await UserRepo.findByPk(id);
+    if (!user) return null;
+    await user.update(data);
+    logger.info(`User updated: ${id}`);
+    return findUserById(id);
+  } catch (error) {
+    logger.error(`updateUser error for user ${id}: ${error}`);
+    throw error;
+  }
 };
 
 export const deleteUser = async (id: string) => {
-  const user = await User.findByPk(id);
-  if (!user) return null;
-  await user.destroy();
-  logger.info(`User deleted: ${id}`);
-  return true;
+  try {
+    const user = await UserRepo.findByPk(id);
+    if (!user) return null;
+    await user.destroy();
+    logger.info(`User deleted: ${id}`);
+    return true;
+  } catch (error) {
+    logger.error(`deleteUser error for user ${id}: ${error}`);
+    throw error;
+  }
 };
 
 export const changeUserPassword = async (userId: string, currentPassword: string, newPassword: string) => {
-  const user = await User.findByPk(userId);
-  if (!user) throw new Error('User not found');
-  if (user.status !== 'active') throw new Error(`Account is ${user.status}`);
+  try {
+    const user = await UserRepo.findByPk(userId);
+    if (!user) throw new Error('User not found');
+    if (user.status !== 'active') throw new Error(`Account is ${user.status}`);
 
-  const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
-  if (!isMatch) {
-    logger.warn(`Password change failed for user: ${userId} — incorrect current password`);
-    throw new Error('Current password is incorrect');
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isMatch) {
+      logger.warn(`Password change failed for user: ${userId} — incorrect current password`);
+      throw new Error('Current password is incorrect');
+    }
+
+    const password_hash = await bcrypt.hash(newPassword, 12);
+    await user.update({ password_hash });
+    logger.info(`Password changed for user: ${userId}`);
+  } catch (error) {
+    logger.error(`changeUserPassword error for user ${userId}: ${error}`);
+    throw error;
   }
+};
 
-  const password_hash = await bcrypt.hash(newPassword, 12);
-  await user.update({ password_hash });
-  logger.info(`Password changed for user: ${userId}`);
+export const sendForgotPasswordOtp = async (email: string): Promise<void> => {
+  try {
+    const user = await UserRepo.findOne({ where: { email } });
+    if (!user) throw new Error('No account found with that email');
+    if (user.status !== 'active') throw new Error(`Account is ${user.status}`);
+
+    const otp = generateOtp();
+    const otp_expires_at = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+    await user.update({ otp_code: otp, otp_expires_at });
+    await sendOtpMail(user.name, user.email, otp);
+    logger.info(`OTP sent for forgot-password: ${user.id}`);
+  } catch (error) {
+    logger.error(`sendForgotPasswordOtp error for email ${email}: ${error}`);
+    throw error;
+  }
+};
+
+export const verifyOtpAndResetPassword = async (email: string, otp: string): Promise<void> => {
+  try {
+    const user = await UserRepo.findOne({ where: { email } });
+    if (!user) throw new Error('No account found with that email');
+    if (user.status !== 'active') throw new Error(`Account is ${user.status}`);
+    if (!user.otp_code || !user.otp_expires_at) throw new Error('No OTP requested for this account');
+    if (user.otp_code !== otp) throw new Error('Invalid OTP');
+    if (new Date() > user.otp_expires_at) throw new Error('OTP has expired');
+
+    const newPassword = generatePassword();
+    const password_hash = await bcrypt.hash(newPassword, 12);
+
+    await user.update({ password_hash, otp_code: null, otp_expires_at: null });
+    await sendNewPasswordMail(user.name, user.email, newPassword);
+    logger.info(`Password reset via OTP for user: ${user.id}`);
+  } catch (error) {
+    logger.error(`verifyOtpAndResetPassword error for email ${email}: ${error}`);
+    throw error;
+  }
 };
 
 export const validateCredentials = async (email: string, password: string) => {
-  const user = await User.findOne({
-    where: { email },
-    include: [{ model: Role, as: 'role', attributes: ['id', 'name', 'permissions'] }],
-  });
+  try {
+    const user = await UserRepo.findOne({
+      where: { email },
+      include: [{ model: Role, as: 'role', attributes: ['id', 'name', 'permissions'] }],
+    });
 
-  if (!user) {
-    logger.warn(`Credential validation failed: email not found (${email})`);
-    throw new Error('Invalid credentials');
-  }
-  if (user.status !== 'active') {
-    logger.warn(`Credential validation rejected for inactive account: ${user.id}`);
-    throw new Error(`Account is ${user.status}`);
-  }
+    if (!user) {
+      logger.warn(`Credential validation failed: email not found (${email})`);
+      throw new Error('Invalid credentials');
+    }
+    if (user.status !== 'active') {
+      logger.warn(`Credential validation rejected for inactive account: ${user.id}`);
+      throw new Error(`Account is ${user.status}`);
+    }
 
-  const isMatch = await bcrypt.compare(password, user.password_hash);
-  if (!isMatch) {
-    logger.warn(`Credential validation failed: wrong password for user ${user.id}`);
-    throw new Error('Invalid credentials');
-  }
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      logger.warn(`Credential validation failed: wrong password for user ${user.id}`);
+      throw new Error('Invalid credentials');
+    }
 
-  const { password_hash: _, ...safeUser } = user.toJSON() as unknown as Record<string, unknown>;
-  return safeUser;
+    const { password_hash: _, ...safeUser } = user.toJSON() as unknown as Record<string, unknown>;
+    return safeUser;
+  } catch (error) {
+    logger.error(`validateCredentials error for email ${email}: ${error}`);
+    throw error;
+  }
 };

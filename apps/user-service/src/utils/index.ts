@@ -14,3 +14,6 @@ export const generatePassword = (): string => {
     .sort(() => Math.random() - 0.5)
     .join('');
 };
+
+export const generateOtp = (): string =>
+  Math.floor(100000 + Math.random() * 900000).toString();
