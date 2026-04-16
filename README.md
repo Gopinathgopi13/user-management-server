@@ -84,44 +84,10 @@ npm run db:seed
 
 ## Environment Variables (Root `.env`)
 
-```env
-# General
-NODE_ENV=development
-JWT_SECRET=change_me
-INTERNAL_API_KEY=internal_secret_key
+Copy `.env.example` to `.env` and update the values for your local setup.
 
-# Service ports
-GATEWAY_PORT=7000
-AUTH_SERVICE_PORT=7001
-USER_SERVICE_PORT=7002
-
-# Service-to-service URLs
-AUTH_SERVICE_URL=http://localhost:7001
-USER_SERVICE_URL=http://localhost:7002
-
-# Auth service DB
-AUTH_DB_HOST=localhost
-AUTH_DB_PORT=5432
-AUTH_DB_USER=postgres
-AUTH_DB_PASSWORD=postgres
-AUTH_DB_NAME=auth_db
-
-# User service DB
-USER_DB_HOST=localhost
-USER_DB_PORT=5432
-USER_DB_USER=postgres
-USER_DB_PASSWORD=postgres
-USER_DB_NAME=user_db
-
-# Mail settings (used by auth-service and user-service)
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_SECURE=false
-MAIL_ADDRESS=noreply@example.com
-MAIL_USERNAME=noreply@example.com
-MAIL_PASSWORD=change_me
-JWT_EXPIRES_IN=15m
-REFRESH_TOKEN_EXPIRES_DAYS=7
+```bash
+cp .env.example .env
 ```
 
 ## Run the Services
