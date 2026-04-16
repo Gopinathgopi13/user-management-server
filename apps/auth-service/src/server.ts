@@ -1,6 +1,6 @@
 import app from './app';
 import config from '@config';
-import logger from '@utils/logger';
+import logger from '@shared/logger';
 import { sequelize } from '@models';
 
 const start = async () => {

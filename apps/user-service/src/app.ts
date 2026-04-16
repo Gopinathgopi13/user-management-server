@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import { Server as SocketIOServer } from 'socket.io';
 import router from './routes';
 import config from '@config';
-import logger from '@utils/logger';
+import logger from '@shared/logger';
 import { sequelize } from './models';
 import { errorHandler, notFound } from './middlewares/error.middleware';
 

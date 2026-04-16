@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "../../",
     "baseUrl": "src",
     "paths": {
       "@config": ["config/index"],
@@ -11,10 +11,13 @@
       "@services/*": ["services/*"],
       "@models": ["models/index"],
       "@models/*": ["models/*"],
+      "@utils/logger": ["../../../shared/logger/index"],
       "@utils/*": ["utils/*"],
       "@middlewares/*": ["middlewares/*"],
       "@schemas/*": ["schemas/*"],
-      "@templates/*": ["templates/*"]
+      "@templates/*": ["templates/*"],
+      "@shared/logger": ["../../../shared/logger/index"],
+      "@shared/mailer": ["../../../shared/mailer/index"]
     }
   },
   "ts-node": {
@@ -23,6 +26,6 @@
   "files": [
     "src/types/express.d.ts"
   ],
-  "include": ["src"],
+  "include": ["src", "../../shared/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import config from './config';
-import logger from './utils/logger';
+import logger from '@shared/logger';
 import routes from './routes';
 import { errorHandler, notFound } from './middlewares/error.middleware';
 

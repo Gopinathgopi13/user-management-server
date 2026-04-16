@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import config from '@config';
 import Role from '@models/role.model';
-import logger from '@utils/logger';
+import logger from '@shared/logger';
 
 interface JwtPayload {
   sub: string;

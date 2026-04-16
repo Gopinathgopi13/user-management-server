@@ -12,6 +12,15 @@ export interface UserInfo {
   };
 }
 
+export interface InternalUserAuthData {
+  id: string;
+  name: string;
+  email: string;
+  status: string;
+  otp_code: string | null;
+  otp_expires_at: string | null;
+}
+
 export type RefreshTokenRepoType = typeof RefreshToken & {
   create: (...args: unknown[]) => Promise<any>;
   findOne: (...args: unknown[]) => Promise<any>;

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema } from 'zod';
-import logger from '@utils/logger';
+import logger from '@shared/logger';
 
 export const validate =
   (schema: ZodSchema) =>

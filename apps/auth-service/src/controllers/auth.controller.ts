@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as authService from '@services/auth.service';
-import logger from '@utils/logger';
+import logger from '@shared/logger';
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
@@ -59,4 +59,36 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 
 export const me = (req: Request, res: Response): void => {
   res.json({ id: req.userId, role: req.userRole });
+};
+
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  const { email } = req.body;
+  if (!email) {
+    res.status(400).json({ status: false, message: 'Email is required' });
+    return;
+  }
+  try {
+    await authService.forgotPassword(email);
+    res.json({ status: true, message: 'OTP sent to your email address' });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to send OTP';
+    logger.error(`forgotPassword error: ${message}`);
+    res.status(400).json({ status: false, message });
+  }
+};
+
+export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    res.status(400).json({ status: false, message: 'Email and OTP are required' });
+    return;
+  }
+  try {
+    await authService.verifyOtpAndResetPassword(email, otp);
+    res.json({ status: true, message: 'OTP verified. New password has been sent to your email' });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'OTP verification failed';
+    logger.error(`verifyOtp error: ${message}`);
+    res.status(400).json({ status: false, message });
+  }
 };

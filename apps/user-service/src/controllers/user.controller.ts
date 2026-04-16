@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as userService from '@services/user.service';
-import logger from '@utils/logger';
+import logger from '@shared/logger';
 
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -135,5 +135,72 @@ export const validateCredentials = async (req: Request, res: Response): Promise<
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Invalid credentials';
     res.status(401).json({ message });
+  }
+};
+
+export const getUserByEmail = async (req: Request, res: Response): Promise<void> => {
+  const { email } = req.body;
+  if (!email) {
+    res.status(400).json({ message: 'Email is required' });
+    return;
+  }
+  try {
+    const user = await userService.findUserByEmail(email);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      status: user.status,
+      otp_code: user.otp_code,
+      otp_expires_at: user.otp_expires_at,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to fetch user';
+    logger.error(`getUserByEmail error: ${message}`);
+    res.status(500).json({ message });
+  }
+};
+
+export const updateUserOtp = async (req: Request, res: Response): Promise<void> => {
+  const { email, otp, otp_expires_at } = req.body;
+  if (!email || !otp || !otp_expires_at) {
+    res.status(400).json({ message: 'email, otp and otp_expires_at are required' });
+    return;
+  }
+  try {
+    const updated = await userService.setUserOtpByEmail(email, otp, new Date(otp_expires_at));
+    if (!updated) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+    res.json({ status: true });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to update user OTP';
+    logger.error(`updateUserOtp error: ${message}`);
+    res.status(500).json({ message });
+  }
+};
+
+export const resetUserPassword = async (req: Request, res: Response): Promise<void> => {
+  const { email, password_hash } = req.body;
+  if (!email || !password_hash) {
+    res.status(400).json({ message: 'email and password_hash are required' });
+    return;
+  }
+  try {
+    const updated = await userService.resetPasswordByEmail(email, password_hash);
+    if (!updated) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+    res.json({ status: true });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to reset password';
+    logger.error(`resetUserPassword error: ${message}`);
+    res.status(500).json({ message });
   }
 };

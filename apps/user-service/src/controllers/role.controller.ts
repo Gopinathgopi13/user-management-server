@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as roleService from '@services/role.service';
-import logger from '@utils/logger';
+import logger from '@shared/logger';
 
 export const getRoles = async (_req: Request, res: Response): Promise<void> => {
   try {

@@ -5,26 +5,7 @@ import config from '../config';
 
 const router = Router();
 
-// Forgot-password & OTP routes → user-service (must be before the generic /auth proxy)
-router.use(
-  '/auth/forgot-password',
-  createProxyMiddleware({
-    target: config.userServiceUrl,
-    changeOrigin: true,
-    pathRewrite: () => '/api/auth/forgot-password',
-  }),
-);
-
-router.use(
-  '/auth/verify-otp',
-  createProxyMiddleware({
-    target: config.userServiceUrl,
-    changeOrigin: true,
-    pathRewrite: () => '/api/auth/verify-otp',
-  }),
-);
-
-// Public auth routes (login, logout) → auth-service
+// Public auth routes (including forgot-password and verify-otp) → auth-service
 router.use(
   '/auth',
   createProxyMiddleware({

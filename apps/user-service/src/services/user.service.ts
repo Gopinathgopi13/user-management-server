@@ -3,12 +3,10 @@ import { Op } from 'sequelize';
 import User from '@models/user.model';
 import Role from '@models/role.model';
 import { UserStatus } from '@models/user.model';
-import { generateOtp, generatePassword } from '@utils/index';
-import logger from '@utils/logger';
-import { sendWelcomeMail, sendOtpMail, sendNewPasswordMail } from '@services/mail.service';
+import { generatePassword } from '@utils/index';
+import logger from '@shared/logger';
+import { sendWelcomeMail } from '@services/mail.service';
 import type { UserRepoType } from '../types/common.types';
-
-const OTP_EXPIRY_MINUTES = 10;
 
 const UserRepo = User as UserRepoType;
 
@@ -151,41 +149,35 @@ export const changeUserPassword = async (userId: string, currentPassword: string
   }
 };
 
-export const sendForgotPasswordOtp = async (email: string): Promise<void> => {
+export const findUserByEmail = async (email: string) => {
   try {
-    const user = await UserRepo.findOne({ where: { email } });
-    if (!user) throw new Error('No account found with that email');
-    if (user.status !== 'active') throw new Error(`Account is ${user.status}`);
-
-    const otp = generateOtp();
-    const otp_expires_at = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
-
-    await user.update({ otp_code: otp, otp_expires_at });
-    await sendOtpMail(user.name, user.email, otp);
-    logger.info(`OTP sent for forgot-password: ${user.id}`);
+    return await UserRepo.findOne({ where: { email } });
   } catch (error) {
-    logger.error(`sendForgotPasswordOtp error for email ${email}: ${error}`);
+    logger.error(`findUserByEmail error for email ${email}: ${error}`);
     throw error;
   }
 };
 
-export const verifyOtpAndResetPassword = async (email: string, otp: string): Promise<void> => {
+export const setUserOtpByEmail = async (email: string, otp: string, otp_expires_at: Date): Promise<boolean> => {
   try {
     const user = await UserRepo.findOne({ where: { email } });
-    if (!user) throw new Error('No account found with that email');
-    if (user.status !== 'active') throw new Error(`Account is ${user.status}`);
-    if (!user.otp_code || !user.otp_expires_at) throw new Error('No OTP requested for this account');
-    if (user.otp_code !== otp) throw new Error('Invalid OTP');
-    if (new Date() > user.otp_expires_at) throw new Error('OTP has expired');
-
-    const newPassword = generatePassword();
-    const password_hash = await bcrypt.hash(newPassword, 12);
-
-    await user.update({ password_hash, otp_code: null, otp_expires_at: null });
-    await sendNewPasswordMail(user.name, user.email, newPassword);
-    logger.info(`Password reset via OTP for user: ${user.id}`);
+    if (!user) return false;
+    await user.update({ otp_code: otp, otp_expires_at });
+    return true;
   } catch (error) {
-    logger.error(`verifyOtpAndResetPassword error for email ${email}: ${error}`);
+    logger.error(`setUserOtpByEmail error for email ${email}: ${error}`);
+    throw error;
+  }
+};
+
+export const resetPasswordByEmail = async (email: string, password_hash: string): Promise<boolean> => {
+  try {
+    const user = await UserRepo.findOne({ where: { email } });
+    if (!user) return false;
+    await user.update({ password_hash, otp_code: null, otp_expires_at: null });
+    return true;
+  } catch (error) {
+    logger.error(`resetPasswordByEmail error for email ${email}: ${error}`);
     throw error;
   }
 };

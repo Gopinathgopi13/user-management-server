@@ -1,5 +1,5 @@
 import Role from '@models/role.model';
-import logger from '@utils/logger';
+import logger from '@shared/logger';
 import type { RoleRepoType } from '../types/common.types';
 
 const RoleRepo = Role as RoleRepoType;
